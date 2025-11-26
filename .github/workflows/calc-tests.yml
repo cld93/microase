@@ -66,3 +66,34 @@ jobs:
       - name: Stop string container
         if: always()
         run: docker rm -f string-ut || true
+  
+  integration-tests:         
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start full architecture
+        run: docker compose -f ./src/docker-compose.yml up -d --build
+
+      - name: Run integration Postman tests with Newman
+        run: newman run tests/integration.postman_collection.json
+
+      - name: Stop full architecture
+        if: always()
+        run: docker compose -f ./src/docker-compose.yml down

@@ -35,3 +35,34 @@ jobs:
       - name: Stop calc container
         if: always()
         run: docker rm -f calc-ut || true
+  
+  string-tests:         
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build string image
+        run: docker build -f ./src/string/Dockerfile_test -t string-ut ./src/string
+
+      - name: Run string container
+        run: docker run -d --name string-ut -p 6000:6000 string-ut
+
+      - name: Run string Postman tests with Newman
+        run: newman run tests/string_ut.postman_collection.json
+
+      - name: Stop string container
+        if: always()
+        run: docker rm -f string-ut || true

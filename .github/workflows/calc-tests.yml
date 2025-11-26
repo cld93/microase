@@ -58,7 +58,7 @@ jobs:
         run: docker build -f ./src/string/Dockerfile_test -t string-ut ./src/string
 
       - name: Run string container
-        run: docker run -d --name string-ut -p 6000:6000 string-ut
+        run: docker run -d --name string-ut -p 5000:5000 string-ut
 
       - name: Run string Postman tests with Newman
         run: newman run tests/string_ut.postman_collection.json

@@ -67,7 +67,8 @@ jobs:
         if: always()
         run: docker rm -f string-ut || true
   
-  integration-tests:         
+  integration-tests:
+    needs: [calc-tests, string-tests] #bonus stage: run in parallel
     runs-on: ubuntu-latest
 
     steps:

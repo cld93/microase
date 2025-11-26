@@ -24,7 +24,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build calc image
-        run: docker build -t calc-ut ./src/calc
+        run: docker build -f ./src/calc/Dockerfile_test -t calc-ut ./src/calc
 
       - name: Run calc container
         run: docker run -d --name calc-ut -p 5000:5000 calc-ut

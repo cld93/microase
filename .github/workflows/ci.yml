@@ -40,8 +40,8 @@ jobs:
 
       # Costruisce l'immagine Docker di calc
       - name: Build calc image
-        run: docker build -t calc-service ./microase/src/calc
-
+        run: docker build -t calc-service -f ./microase/src/calc/Dockerfile_test ./microase/src/calc
+        
       # Avvia il container in background (-d)
       # e mappa la porta 5000 del container sul runner
       - name: Run calc container
@@ -67,7 +67,7 @@ jobs:
 
       # Stessa cosa di calc, ma per il microservizio string
       - name: Build string image
-        run: docker build -t string-service ./microase/src/string
+        run: docker build -t string-service -f ./microase/src/string/Dockerfile_test ./microase/src/string
 
       - name: Run string container
         run: docker run -d -p 5000:5000 --name string-container string-service

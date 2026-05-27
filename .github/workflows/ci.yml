@@ -80,7 +80,7 @@ jobs:
 
       - name: Stop string container
         if: always()
-        run: docker stop string-container && docker rm string-container
+        run: docker stop string-container && docker rm string-container || true
 
       # ───────────────────────────────────────────
       # FASE 3: TEST DI INTEGRAZIONE (tutto insieme)

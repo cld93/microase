@@ -1,0 +1,108 @@
+# Nome del workflow (appare nell'interfaccia di GitHub)
+name: Microase CI
+
+# EVENTO: cosa scatena il workflow?
+# In questo caso: ogni push sul branch main
+on:
+  push:
+    branches:
+      - main
+
+# JOB: il blocco di lavoro da eseguire
+jobs:
+  ci:
+    # RUNNER: che tipo di macchina virtuale usa GitHub?
+    runs-on: ubuntu-latest
+
+    steps:
+      # Scarica il codice del repository sul runner
+      # Senza questo step, la macchina non ha i nostri file!
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Installa Node.js sul runner (serve per Newman)
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Installa Newman (Postman da riga di comando)
+      - name: Install Newman
+        run: npm install -g newman
+
+      # Configura Docker sul runner
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      # ─────────────────────────────────────────
+      # FASE 1: TEST UNITARI DI CALC IN ISOLAMENTO
+      # ─────────────────────────────────────────
+
+      # Costruisce l'immagine Docker di calc
+      - name: Build calc image
+        run: docker build -t calc-service ./microase/src/calc
+
+      # Avvia il container in background (-d)
+      # e mappa la porta 5000 del container sul runner
+      - name: Run calc container
+        run: docker run -d -p 5000:5000 --name calc-container calc-service
+
+      # Aspetta 5 secondi che Flask si avvii prima di testare
+      - name: Wait for calc to start
+        run: sleep 5
+
+      # Esegue i test Postman su calc con Newman
+      - name: Test calc with Newman
+        run: newman run microase/tests/calc_ut.postman_collection.json
+
+      # Ferma e rimuove il container
+      # "if: always()" → lo fa ANCHE se Newman ha trovato errori
+      - name: Stop calc container
+        if: always()
+        run: docker stop calc-container && docker rm calc-container
+
+      # ──────────────────────────────────────────
+      # FASE 2: TEST UNITARI DI STRING IN ISOLAMENTO
+      # ──────────────────────────────────────────
+
+      # Stessa cosa di calc, ma per il microservizio string
+      - name: Build string image
+        run: docker build -t string-service ./microase/src/string
+
+      - name: Run string container
+        run: docker run -d -p 5000:5000 --name string-container string-service
+
+      - name: Wait for string to start
+        run: sleep 5
+
+      - name: Test string with Newman
+        run: newman run microase/tests/string_ut.postman_collection.json
+
+      - name: Stop string container
+        if: always()
+        run: docker stop string-container && docker rm string-container
+
+      # ───────────────────────────────────────────
+      # FASE 3: TEST DI INTEGRAZIONE (tutto insieme)
+      # ───────────────────────────────────────────
+
+      # Costruisce tutte le immagini definite nel docker-compose
+      - name: Build full architecture
+        run: docker compose -f microase/src/docker-compose.yml build
+
+      # Avvia gateway + calc + string + dbm + mongodb insieme
+      - name: Run full architecture
+        run: docker compose -f microase/src/docker-compose.yml up -d
+
+      # Aspetta 10 secondi (ci sono più servizi da avviare)
+      - name: Wait for architecture to start
+        run: sleep 10
+
+      # Testa l'intera architettura con Newman
+      - name: Test integration with Newman
+        run: newman run microase/tests/integration.postman_collection.json
+
+      # Spegne tutta l'architettura
+      - name: Stop full architecture
+        if: always()
+        run: docker compose -f microase/src/docker-compose.yml down
